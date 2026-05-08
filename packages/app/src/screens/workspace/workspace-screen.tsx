@@ -696,6 +696,10 @@ function WorkspaceScreenContent({ serverId, workspaceId }: WorkspaceScreenProps)
         }
       }
     },
+    onError: (error) => {
+      const message = error instanceof Error ? error.message : String(error);
+      toast.show(`Failed to open terminal: ${message}`);
+    },
   });
   const launchBrowserMutation = useMutation({
     mutationFn: async () => {

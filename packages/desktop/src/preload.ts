@@ -79,6 +79,10 @@ contextBridge.exposeInMainWorld("hubcodeDesktop", {
     showContextMenu: (input?: Record<string, unknown>) =>
       ipcRenderer.invoke("hubcode:menu:showContextMenu", input),
   },
+  screenShare: {
+    resolve: (payload: { requestId: string; sourceId: string | null }) =>
+      ipcRenderer.invoke("hubcode:screen-share:resolve", payload),
+  },
   browserView: {
     create: (payload: { browserId: string; url?: string }) =>
       ipcRenderer.invoke("hubcode:browser-view:create", payload),

@@ -9,6 +9,7 @@ import {
   ScrollView,
   type GestureResponderEvent,
   type PressableStateCallbackType,
+  type ViewProps,
   type ViewStyle,
 } from "react-native";
 import * as Haptics from "expo-haptics";
@@ -1275,14 +1276,29 @@ function ProjectHeaderRow({
     </>
   );
 
+  // Hover detection: `onPointerEnter`/`onPointerLeave` on a RN-web `View`
+  // doesn't reliably fire on Windows Electron (works on macOS Chromium —
+  // likely a react-native-web event-forwarding quirk). `onMouseEnter`/
+  // `onMouseLeave` map to DOM `mouseenter`/`mouseleave` which (a) fire
+  // consistently across Chromium platforms and (b) don't bubble — so
+  // hovering a child Pressable (e.g. the trailing icons) doesn't fire
+  // `mouseleave` on the outer row. Using Pressable's `onHoverIn`/`onHoverOut`
+  // doesn't work here because they fire on each nested Pressable boundary,
+  // making the row lose its hovered styling when the cursor enters a
+  // trailing icon button.
+  // RN-web forwards `onMouseEnter`/`onMouseLeave` to the underlying div but
+  // RN's View type doesn't include them; cast to suppress the type error.
+  const hoverProps = {
+    onMouseEnter: handlePointerEnter,
+    onMouseLeave: handlePointerLeave,
+  } as unknown as ViewProps;
   if (menuController) {
     return (
       <View
         {...dragHandleProps?.attributes}
         {...dragHandleProps?.listeners}
         ref={dragHandleProps?.setActivatorNodeRef as unknown as Ref<View>}
-        onPointerEnter={handlePointerEnter}
-        onPointerLeave={handlePointerLeave}
+        {...hoverProps}
       >
         <ContextMenuTrigger
           enabledOnMobile={false}
@@ -1307,8 +1323,7 @@ function ProjectHeaderRow({
       {...dndAttrs}
       {...dragHandleProps?.listeners}
       ref={dragHandleProps?.setActivatorNodeRef as unknown as Ref<View>}
-      onPointerEnter={handlePointerEnter}
-      onPointerLeave={handlePointerLeave}
+      {...hoverProps}
     >
       <Pressable
         style={projectRowStyle}
@@ -1335,7 +1350,12 @@ function ProjectKanbanRow({ selected, count, onPress }: ProjectKanbanRowProps) {
   const [isHovered, setIsHovered] = useState(false);
 
   return (
-    <View onPointerEnter={() => setIsHovered(true)} onPointerLeave={() => setIsHovered(false)}>
+    <View
+      {...({
+        onMouseEnter: () => setIsHovered(true),
+        onMouseLeave: () => setIsHovered(false),
+      } as unknown as ViewProps)}
+    >
       <Pressable
         accessibilityRole="link"
         style={({ pressed }) => [
@@ -1454,8 +1474,10 @@ function WorkspaceRowInner({
         {...dragHandleProps?.listeners}
         ref={dragHandleProps?.setActivatorNodeRef as unknown as Ref<View>}
         style={styles.workspaceRowContainer}
-        onPointerEnter={handlePointerEnter}
-        onPointerLeave={handlePointerLeave}
+        {...({
+          onMouseEnter: handlePointerEnter,
+          onMouseLeave: handlePointerLeave,
+        } as unknown as ViewProps)}
       >
         <Pressable
           disabled={isArchiving}

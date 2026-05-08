@@ -38,6 +38,7 @@ import {
   setDrawColor,
   useSharedDrawState,
 } from "@/stores/shared-draw-store";
+import { getIsElectronMac } from "@/constants/platform";
 import { Fonts } from "@/constants/theme";
 import { rectsIntersect, useBrowserRects } from "@/stores/browser-bounds-store";
 
@@ -160,13 +161,30 @@ function PanelShell({ roomSend }: { roomSend: (type: string, payload?: unknown) 
       isDragging: true,
     };
   };
+  // Keep the panel fully inside the viewport so it can never escape and
+  // become unreachable. On Electron macOS the traffic lights sit at the top
+  // of the window and would cover the drag handle, so we reserve a strip
+  // there.
+  const clampPosition = (p: { x: number; y: number }) => {
+    const el = panelRef.current;
+    const w = el?.offsetWidth ?? 320;
+    const h = el?.offsetHeight ?? 200;
+    const topInset = getIsElectronMac() ? 40 : 0;
+    const maxX = Math.max(0, window.innerWidth - w);
+    const maxY = Math.max(topInset, window.innerHeight - h);
+    return {
+      x: Math.min(Math.max(p.x, 0), maxX),
+      y: Math.min(Math.max(p.y, topInset), maxY),
+    };
+  };
+
   useEffect(() => {
     let rafId = 0;
     let pending: { x: number; y: number } | null = null;
     const flush = () => {
       rafId = 0;
       if (pending) {
-        setPosition(pending);
+        setPosition(clampPosition(pending));
         pending = null;
       }
     };
@@ -185,6 +203,14 @@ function PanelShell({ roomSend }: { roomSend: (type: string, payload?: unknown) 
       window.removeEventListener("mousemove", onMove);
       window.removeEventListener("mouseup", onUp);
     };
+  }, []);
+
+  // Re-clamp on viewport resize so the panel doesn't get stranded off-screen
+  // if the window shrinks.
+  useEffect(() => {
+    const onResize = () => setPosition((p) => clampPosition(p));
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
   }, []);
 
   const cols = count <= 1 ? 1 : count <= 2 ? 2 : count <= 4 ? 2 : 3;
@@ -899,6 +925,7 @@ function CustomTile({
     source: Track.Source.Camera,
     participant: trackRef.participant,
   });
+  const isScreenShare = trackRef.source === Track.Source.ScreenShare;
   const micMuted = useIsMuted({
     source: Track.Source.Microphone,
     participant: trackRef.participant,
@@ -913,7 +940,7 @@ function CustomTile({
   } catch {}
   const name = trackRef.participant.name || trackRef.participant.identity;
   const initial = (name?.trim().charAt(0) || "?").toUpperCase();
-  const showAvatar = cameraMuted || !trackRef.publication;
+  const showAvatar = !isScreenShare && (cameraMuted || !trackRef.publication);
   return (
     <div
       style={{
@@ -972,12 +999,12 @@ function CustomTile({
             </div>
           )}
         </div>
-      ) : (
+      ) : trackRef.publication ? (
         <VideoTrack
           trackRef={trackRef}
           style={{ width: "100%", height: "100%", objectFit: "cover" }}
         />
-      )}
+      ) : null}
       <div
         style={{
           position: "absolute",
@@ -1106,13 +1133,20 @@ function PalettePopover({
   onClear: () => void;
 }) {
   // Track anchor position so the palette follows the floating panel as it
-  // moves or the window resizes.
+  // moves or the window resizes. Only commit state when coords actually
+  // change — a naive RAF loop with `setRect` every frame triggers React
+  // re-renders at 60fps and starves the Electron main process during a
+  // LiveKit call (observed: STUN binding timeouts, SCTP aborts).
   const [rect, setRect] = useState(() => anchor.getBoundingClientRect());
   useEffect(() => {
     let raf = 0;
-    const update = () => setRect(anchor.getBoundingClientRect());
+    let last = anchor.getBoundingClientRect();
     const tick = () => {
-      update();
+      const next = anchor.getBoundingClientRect();
+      if (next.left !== last.left || next.top !== last.top) {
+        last = next;
+        setRect(next);
+      }
       raf = requestAnimationFrame(tick);
     };
     raf = requestAnimationFrame(tick);

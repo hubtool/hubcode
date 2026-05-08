@@ -41,6 +41,10 @@ export interface DesktopMenuBridge {
   showContextMenu?: (input?: { kind?: "terminal"; hasSelection?: boolean }) => Promise<void>;
 }
 
+export interface DesktopScreenShareBridge {
+  resolve?: (payload: { requestId: string; sourceId: string | null }) => Promise<void>;
+}
+
 export interface DesktopWindowControlsOverlayUpdate {
   height?: number;
   backgroundColor?: string;
@@ -84,6 +88,7 @@ export interface DesktopHostBridge {
   notification?: DesktopNotificationBridge;
   opener?: DesktopOpenerBridge;
   menu?: DesktopMenuBridge;
+  screenShare?: DesktopScreenShareBridge;
 }
 
 declare global {

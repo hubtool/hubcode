@@ -243,6 +243,11 @@ function applyRuntimeSettingsToClaudeOptions(
       // or the user overrides the command via runtime settings, use that directly.
       const isDefaultRuntime = resolved.command === "node" || resolved.command === "bun";
       const command = isDefaultRuntime ? process.execPath : resolved.command;
+      // Windows: npm installs `claude` as a `.cmd` shim. Since CVE-2024-27980
+      // (Node ≥18.20.2 / 20.12.2 / 21.7.3), spawning a .cmd/.bat without
+      // `shell: true` throws EINVAL. We otherwise prefer `shell: false` so
+      // cmd.exe doesn't mangle JSON in args (e.g. --mcp-config).
+      const isWindowsBatch = process.platform === "win32" && /\.(cmd|bat)$/i.test(command);
       const child = spawnProcess(command, resolved.args, {
         cwd: spawnOptions.cwd,
         env: {
@@ -251,10 +256,7 @@ function applyRuntimeSettingsToClaudeOptions(
         },
         signal: spawnOptions.signal,
         stdio: ["pipe", "pipe", "pipe"],
-        // Bypass cmd.exe on Windows: the SDK passes --mcp-config with inline JSON
-        // containing double quotes, which cmd.exe mangles (strips quotes, breaks parsing).
-        // The command is always a resolved binary path, so shell routing is unnecessary.
-        shell: false,
+        shell: isWindowsBatch,
       });
       if (typeof options.stderr === "function") {
         child.stderr?.on("data", (chunk: Buffer | string) => {

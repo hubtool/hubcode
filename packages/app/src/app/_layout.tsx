@@ -115,6 +115,7 @@ import { AddProjectModal } from "@/components/add-project-modal";
 import { TeamProjectsModal } from "@/components/team-projects-modal";
 import { ParticipantBar } from "@/components/sharing/participant-bar";
 import { FloatingVideoPanel } from "@/components/sharing/floating-video-panel";
+import { ScreenSharePicker } from "@/components/sharing/screen-share-picker";
 import { SharedWorkspaceRouteGuard } from "@/components/sharing/shared-workspace-route-guard";
 import { JoiningSharedSessionOverlay } from "@/components/sharing/joining-shared-session-overlay";
 import { SharedDrawOverlay } from "@/components/sharing/shared-draw-overlay";
@@ -608,6 +609,7 @@ function AppContainer({
       <TeamProjectsModal />
       <KeyboardShortcutsDialog />
       <GlobalFloatingVideoPanel />
+      <ScreenSharePicker />
       <ImageLightbox />
     </View>
   );

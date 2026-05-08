@@ -1,5 +1,21 @@
 # Changelog
 
+## 2.8.4 - 2026-05-08
+
+### Added
+- Custom in-app screen-share picker on desktop — pick any screen or window from a unified list, regardless of which surface type the call asked for.
+
+### Fixed
+- Screen share no longer disappears from the participant tile when you turn your camera off during a call.
+- Cancelling the screen-share permission prompt no longer surfaces a "Video was requested, but no video stream was provided" error.
+- Floating video panel can no longer be dragged off-screen and lost; it stays fully inside the window and clears the macOS traffic-light buttons.
+- Windows: Claude agents now launch correctly. Previously they failed with `spawn EINVAL` because the npm `claude.cmd` shim couldn't be spawned under the new Node child-process security rules.
+- Windows: hovering a project row now reveals the trailing icons (new workspace, more menu), the "Tasks" row highlight, and the workspace PR badge — they were invisible because the underlying hover events weren't firing.
+- Opening a new terminal tab no longer fails silently when the daemon times out — failures now surface a toast instead of leaving the button stuck.
+
+### Improved
+- Smoother video calls when the drawing color palette is open — the palette's anchor tracker no longer triggers re-renders on every frame.
+
 ## 2.7.3 - 2026-04-28
 
 ### Added

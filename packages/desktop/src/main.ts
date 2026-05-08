@@ -78,6 +78,7 @@ import {
   ensureNotificationCenterRegistration,
 } from "./features/notifications.js";
 import { registerOpenerHandlers } from "./features/opener.js";
+import { registerScreenShareHandler } from "./features/screen-share.js";
 import { setupApplicationMenu } from "./features/menu.js";
 import { parseOpenProjectPathFromArgv } from "./open-project-routing.js";
 import { findDeepLinkInArgv, parseDeepLinkUrl, type DeepLink } from "./deep-link-routing.js";
@@ -450,6 +451,7 @@ async function bootstrap(): Promise<void> {
   registerNotificationHandlers();
   registerOpenerHandlers();
   registerBrowserViewIpc();
+  registerScreenShareHandler();
   await createMainWindow();
 
   // Provision the bundled Claude Code runtime used by the Hubcode agent.
